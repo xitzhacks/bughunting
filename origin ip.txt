@@ -1,0 +1,45 @@
+TOPIC - ORIGIN IP 
+The origin IP address of the server can be revealed through websites that track the IP history of domains or through files on the web server that reveal the address in the source code.
+>dig
+>nslookup
+>shodan
+>censys
+>securitytrails
+
+HOW TO FIND :
+
+1. dig +short example.com
+curl -s https://ipinfo.io/IP | jq -r '.org'
+
+2.Use https://dnsdumpster.com to generate a map.
+
+3.Next, make a search using Censys and save the IP's that look to match your target in a text file. Example: https://censys.io/ipv4?q=......
+
+4. Another way you can find IP's tied to a domain is by viewing their historical IPs. You can do this with SecurityTrails DNS trails. https://securitytrails.com/domain/example.com/dns
+
+5.If you enumerate your targets DNS, you may find that they have something resembling a dev.example.com or staging.example.com subdomain, and it may be pointing to the source host with no WAF. 
+
+- Get all the subdomains.
+    `subfinder -silent -d 0x00sec.org | dnsprobe -silent | awk  '{ print $2 }'  | sort -u | tee -a ips.txt`
+
+6. for ip in $(cat ips.txt) # iterate through each line in file
+do 
+    org=$(curl -s <https://ipinfo.io/$ip> | jq -r '.org') #  Get Org from IPInfo
+  title=$(timeout 2 curl -s -k -H "Host: example.com" <https://$ip/> | pup 'title text{}') # Get title
+    echo "IP: $ip Title: $title Org: $org" # Print results
+
+7. censys cmd:
+censys search hackerone.com | grep “ip” | egrep -v “description” | cut -d “:” -f2 | tr -d \”\,
+
+8. shodan :
+shodan search Ssl.cert.subject.CN:”hackerone.com” 200 — fields ip_str | httpx
+
+REFERENCE :
+https://kathan19.gitbook.io/howtohunt/find-origin-ip/findorigin
+https://medium.com/@bobby.S/how-to-find-origin-ip-1f684f459942
+
+REPORTS:
+https://hackerone.com/reports/1637577
+https://hackerone.com/reports/1536299
+https://infosecwriteups.com/origin-ip-found-d-dos-waf-cloudflare-protection-bypassed-41fc280ccf8f
+https://vulners.com/hackerone/H1:1531183
